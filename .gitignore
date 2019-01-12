@@ -1,0 +1,58 @@
+/*.bak
+/.gradle
+/.vagrant
+/jenkins-cli.jar
+/jenkins.pid
+/jenkins.war*
+/my_jenkins_home
+
+# eclipse
+**/.project
+**/.classpath
+**/.settings/
+**/target/
+**/bin/
+
+# intellij
+.idea
+**/*.iml
+**/*.ipr
+**/*.iws
+
+# gradle
+.gradle
+**/.gradle/*/*
+**/build/
+**/out/
+
+# python
+**/__pycache__
+*.pyc
+
+# other
+**/logs/
+**/*.log
+**/*.log.*
+**/tmp/
+**/temp/
+
+# Mac OS
+.DS_Store
+
+# Build 
+/build/
+/temp/
+/tmp/
+
+# Data
+secrets/aws.credentials
+secret.env
+secrets.env
+
+deploy/tasks/enabled/task_*.mk
+projects/**/
+.kube
+.ssh
+.vscode
+public
+projects

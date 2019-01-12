@@ -1,0 +1,4 @@
+FROM jenkins/slave:latest
+COPY jenkins-slave /usr/local/bin/jenkins-slave
+RUN chmod +X /usr/local/bin/jenkins-slave
+ENTRYPOINT ["jenkins-slave"]

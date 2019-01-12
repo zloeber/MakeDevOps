@@ -1,0 +1,9 @@
+boto3
+requests
+configparser
+bs4
+requests_ntlm
+click
+awscli
+s3cmd
+python-magic

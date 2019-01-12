@@ -1,0 +1,7 @@
+# Quiet pushd/popd commands
+pushd () {
+    command pushd "$@" > /dev/null
+}
+popd () {
+    command popd "$@" > /dev/null
+}

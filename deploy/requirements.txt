@@ -1,0 +1,15 @@
+awscli
+ansible
+ansible-tower-cli
+boto
+boto3
+bs4
+click
+configparser
+python-magic
+requests
+requests_ntlm
+s3cmd
+aws-shell
+jenkins-job-builder
+pipenv

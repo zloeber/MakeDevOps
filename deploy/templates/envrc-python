@@ -1,0 +1,31 @@
+#!/bin/bash
+# Credit: https://www.electricmonk.nl/log/2018/06/03/direnv-directory-specific-environments/
+# Settings
+
+# If we have a version locally, use it
+pyversion=`cat .python-version 2>/dev/null`
+
+# Otherwise default to a cool newer version
+pyversion=${pyversion:-"3.7.2"}
+use python ${pyversion}
+
+# Set the project dir to this path and the name to this directory name
+PROJ_DIR="${PWD}"
+PROJ_NAME="${PWD##*/}"
+VENV_DIR="${HOME}/.pyenvs"
+
+PROJ_VENV="$VENV_DIR/$PROJ_NAME"
+
+# Create Python virtualenv if it doesn't exist yet
+if [ \! -d "$PROJ_VENV" ]; then
+    echo "Creating new environment"
+    virtualenv -p python $PROJ_VENV
+    echo "Installing requirements"
+    $PROJ_VENV/bin/pip install -r ./requirements.txt
+fi
+
+# Emulate the virtualenv's activate, because we can't source things in direnv
+export VIRTUAL_ENV="$PROJ_VENV"
+export PATH="$PROJ_VENV/bin:$PATH:$PWD"
+export PS1="(`basename \"$VIRTUAL_ENV\"`) $PS1"
+export PYTHONPATH="${PWD}/src"
