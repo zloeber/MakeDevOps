@@ -142,25 +142,6 @@ setup-zgen-repos() {
   fi
 }
 
-setup-custom-exports() {
-  if [[ -f ~/.zsh_exports ]]; then
-    source ~/.zsh_exports
-  fi
-}
-
-
-setup-custom-functions() {
-  if [[ -f ~/.zsh_functions ]]; then
-    source ~/.zsh_functions
-  fi
-}
-
-setup-custom-completions() {
-  if [[ -f ~/.zsh_completions ]]; then
-    source ~/.zsh_completions
-  fi
-}
-
 # This comes from https://stackoverflow.com/questions/17878684/best-way-to-get-file-modified-time-in-seconds
 # This works on both Linux with GNU fileutils and macOS with BSD stat.
 
@@ -224,7 +205,17 @@ if [ $(get_file_modification_time ${REAL_ZGEN_SETUP}) -gt $(get_file_modificatio
 fi
 unset REAL_ZGEN_SETUP
 
-# Setup exports file if exists
-setup-custom-functions
-setup-custom-exports
-setup-custom-completions
+if [[ -f ~/.zsh_exports ]]; then
+  echo "Custom exports.."
+  source ~/.zsh_exports
+fi
+
+if [[ -f ~/.zsh_functions ]]; then
+  echo "Custom functions.."
+  source ~/.zsh_functions
+fi
+
+if [[ -f ~/.zsh_completions ]]; then
+  echo "Custom completions.."
+  source ~/.zsh_completions
+fi

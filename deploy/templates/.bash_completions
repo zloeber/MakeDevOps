@@ -21,9 +21,7 @@ if type hugo &>/dev/null; then
   source <(cat /tmp/hugo-auto.sh) && echo "hugo: Autocomplete Loaded"
   rm -rf /tmp/hugo-auto.sh
 fi
-if type ssh-agent &>/dev/null; then
-  eval "$(ssh-agent -s)" && echo "ssh-agent: started"
-fi
+
 if type pyenv &>/dev/null; then
   eval "$(pyenv init -)"
   echo "pyenv: Initialized"
