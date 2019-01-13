@@ -1,11 +1,21 @@
+# Makedevops
+export MAKEDEVOPS_PATH=$HOME/.local/makedevops
+
+# Bin PATH
+export BIN_PATH="${HOME}/.local/bin"
+
+# WSL Vagrant path
+export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
+
 # go
 export GOROOT="${HOME}/.go"
 export GOPATH="${HOME}/go"
 
-## pyenv configs
+# pyenv configs
 export PYENV_ROOT="${HOME}/.pyenv"
 
-PULUMI_ROOT=${HOME}/.pulumi/bin
+# Pulumi (if used)
+export PULUMI_ROOT=${HOME}/.pulumi/bin
 
-export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${PATH}"
-export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
+# Finally your path
+export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${BIN_PATH}:${PATH}"

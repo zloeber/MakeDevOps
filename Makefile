@@ -130,7 +130,7 @@ reset-zsh: ## Reset zsh shell configuration (WARNING!)
 
 PHONY: reset-bash
 reset-bash: ## Reset bash shell configuration (WARNING!)
-	@cp -rf $(TEMPLATE_PATH)/.bash* "${HOME}"
+	@cp -rf $(TEMPLATE_PATH)/.b* "${HOME}"
 	@echo 'Restart bash process for reset shell'
 
 PHONY: config-bin-path
@@ -138,7 +138,7 @@ add-bin-path: ## Adds .local/bin path to profile
 	@echo "Ensuring ${BINPATH} exists"
 	@mkdir -p "${BINPATH}"
 	@echo "Adding ${BINPATH} to PATH in .bashrc"
-	@echo 'export PATH="${BINPATH}:$${PATH}"' >> "${HOME}/.bashrc"
+	@echo 'export PATH="${BINPATH}:${PATH}"' >> "${HOME}/.bashrc"
 
 ## Hidden tasks
 .show-platform-error: ## Shows that there is some issue with the platform for the chosen operation

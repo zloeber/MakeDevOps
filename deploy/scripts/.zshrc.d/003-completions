@@ -1,0 +1,29 @@
+shellenv="${SHELL##*/}"
+
+if type ssh-agent &>/dev/null; then
+  eval "$(ssh-agent -s)" && echo "ssh-agent: started"
+fi
+
+if type awless &>/dev/null; then
+  source <(awless completion "${shellenv}") && echo "awless: Autocomplete"
+fi
+if type kubectl &>/dev/null; then
+  source <(kubectl completion "${shellenv}") && echo "kubectl: Autocomplete Loaded"
+fi
+if type crictl &>/dev/null; then
+  source <(crictl completion "${shellenv}") && echo "crictl: Autocomplete"
+fi
+if type hugo &>/dev/null; then
+  hugo gen autocomplete --completionfile /tmp/hugo-auto.sh > /dev/null
+  source <(cat /tmp/hugo-auto.sh) && echo "hugo: Autocomplete Loaded"
+  rm -rf /tmp/hugo-auto.sh
+fi
+
+if type pyenv &>/dev/null; then
+  eval "$(pyenv init -)"
+  echo "pyenv: Initialized"
+fi
+
+if type direnv &>/dev/null; then
+  source <(direnv hook "${shellenv}") && echo "direnv: Hook loaded"
+fi

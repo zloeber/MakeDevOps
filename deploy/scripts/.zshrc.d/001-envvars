@@ -1,23 +1,21 @@
 # Makedevops
-export MAKEDEVOPS_PATH=$HOME
+export MAKEDEVOPS_PATH=$HOME/.local/makedevops
 
-# GoLang
-export GOROOT=$HOME/.go
-export GOPATH=$HOME
+# Bin PATH
+export BIN_PATH="${HOME}/.local/bin"
 
-PATH="${HOME}/.local/bin:${GOROOT}/bin:${PATH}"
+# WSL Vagrant path
+export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
 
-# awless
-source <(awless completion $SHELL)
+# go
+export GOROOT="${HOME}/.go"
+export GOPATH="${HOME}/go"
 
-# add Pulumi to the PATH
-export PATH=$PATH:$HOME/.pulumi/bin
-
-# kubectl autocomplete
-source <(kubectl completion zsh)
-
-## pyenv configs
+# pyenv configs
 export PYENV_ROOT="${HOME}/.pyenv"
-export PATH="${PYENV_ROOT}/bin:${PATH}"
 
-eval "$(direnv hook zsh)"
+# Pulumi (if used)
+export PULUMI_ROOT=${HOME}/.pulumi/bin
+
+# Finally your path
+export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${BIN_PATH}:${PATH}"

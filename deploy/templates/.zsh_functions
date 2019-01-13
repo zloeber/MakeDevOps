@@ -1,4 +1,13 @@
 #!/bin/bash
+
+# Quiet pushd/popd commands
+pushd () {
+    command pushd "$@" > /dev/null
+}
+popd () {
+    command popd "$@" > /dev/null
+}
+
 add-to-path() {
     newelement=${1%/}
     if [ -d "$1" ] && ! echo $PATH | grep -E -q "(^|:)$newelement($|:)" ; then
