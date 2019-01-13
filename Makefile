@@ -124,10 +124,8 @@ show-version: ## Output the current version
 
 PHONY: reset-zsh
 reset-zsh: ## Reset zsh shell configuration (WARNING!)
-	@pushd "${HOME}" > /dev/null || true
 	@cp -rf $(TEMPLATE_PATH)/.z* "${HOME}"
-	@git clone https://github.com/tarjoilija/zgen.git 2>/dev/null || true
-	@popd > /dev/null || true
+	@cp -rf $(SCRIPT_PATH)/.z* "${HOME}"
 	@echo 'Restart zsh to reset shell'
 
 PHONY: reset-bash

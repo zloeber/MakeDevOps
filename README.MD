@@ -14,6 +14,8 @@ Dropping these scripts into a Makefile was just convenient at the time. Now this
 
 I tend to install everything to ${HOME}/.local/bin. I've also setup several .env files and other oddball templates you may not like. I welcome improvements, there certainly is room for them.
 
+Oh, I've included quite a large amount of additional scripts, make tasks, and other goodies in this repo that didn't fit anywhere else.
+
 ## How do I Use This?
 
 I wrapped the whole thing in a fairly standard CentOS 7 vagrant box that drops you directly in a prompt ready to use `make` for further configuration. From zero to instant command-line devops wizard can be achieved with something like the following:
@@ -28,13 +30,24 @@ make install-golang install-kubectl install-kind start-kind-session install-helm
 
 I've used it to bootstrap several tools I like to alway be handy. Towards that end, there is a default vagrantfile definition that can be used to pull up a makedevops working area that should run almost all tasks in this project if desired.
 
+Of course it can be used right on your workstation as well. Here is the general script to get things working.
+
+```bash
+rm -rf ~/.local/makedevops
+git clone https://github.com/zloeber/makedevops.git ~/.local/makedevops
+ln -s ~/.local/makedevops/Makefile ~/
+export MAKEDEVOPS_PATH='~/.local/makedevops'
+```
+
+That lets you run make from your home directory if desired (and add additional tasksets for further functionality).
+
 ## Why a Makefile?
 
 I've found myself solving some unique problems within some specific constraints that had me doing some heavy Makefile work and realized how useful it was for simple bootstrap operations on Linux, Window Subsystem for Linux, or OSX. So I started adding one off tasks for the many different tools I've been tinkering with into this one project.
 
 ## What Tools Are There?
 
-I've added all kinds. But the default set of tasks are pretty small. They are meant for basic operations and to add more tasksets. This can keep the make help output more meaningful.
+I've added all kinds. But the default set of tasks are pretty small. They are meant for basic operations and to add more tasksets. This can keep the help output more meaningful.
 
 The different tools are separated out for multi-platform installation and to be able to pick and choose from for your own customized Makefile. Almost all tasks are simple scripts that you can use in your own custom tooling so this is kind of a library too. 
 

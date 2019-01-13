@@ -1,0 +1,11 @@
+# go
+export GOROOT="${HOME}/.go"
+export GOPATH="${HOME}/go"
+
+## pyenv configs
+export PYENV_ROOT="${HOME}/.pyenv"
+
+PULUMI_ROOT=${HOME}/.pulumi/bin
+
+export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${PATH}"
+export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"

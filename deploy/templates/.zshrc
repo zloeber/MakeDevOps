@@ -9,20 +9,15 @@
 
 # Clone zgen if you haven't already
 if [[ -z "$ZGEN_PARENT_DIR" ]]; then
-  ZGEN_PARENT_DIR="${HOME}"
+  ZGEN_PARENT_DIR="${HOME}/.zgen"
   echo "ZGEN_PARENT_DIR: ${ZGEN_PARENT_DIR}"
 fi
-if [[ ! -f $ZGEN_PARENT_DIR/zgen/zgen.zsh ]]; then
-  if [[ ! -d "$ZGEN_PARENT_DIR" ]]; then
-    mkdir -p "$ZGEN_PARENT_DIR"
-  fi
-  pushd $ZGEN_PARENT_DIR
-  git clone https://github.com/tarjoilija/zgen.git
-  popd
+if [[ ! -f $ZGEN_PARENT_DIR/zgen.zsh ]]; then
+  git clone https://github.com/tarjoilija/zgen.git $ZGEN_PARENT_DIR
 fi
 
 # Source zgen for the rest of this deployment
-source $ZGEN_PARENT_DIR/zgen/zgen.zsh
+source $ZGEN_PARENT_DIR/zgen.zsh
 unset ZGEN_PARENT_DIR
 
 load-starter-plugin-list() {
@@ -147,6 +142,25 @@ setup-zgen-repos() {
   fi
 }
 
+setup-custom-exports() {
+  if [[ -f ~/.zsh_exports ]]; then
+    source ~/.zsh_exports
+  fi
+}
+
+
+setup-custom-functions() {
+  if [[ -f ~/.zsh_functions ]]; then
+    source ~/.zsh_functions
+  fi
+}
+
+setup-custom-completions() {
+  if [[ -f ~/.zsh_completions ]]; then
+    source ~/.zsh_completions
+  fi
+}
+
 # This comes from https://stackoverflow.com/questions/17878684/best-way-to-get-file-modified-time-in-seconds
 # This works on both Linux with GNU fileutils and macOS with BSD stat.
 
@@ -209,3 +223,8 @@ if [ $(get_file_modification_time ${REAL_ZGEN_SETUP}) -gt $(get_file_modificatio
   setup-zgen-repos
 fi
 unset REAL_ZGEN_SETUP
+
+# Setup exports file if exists
+setup-custom-functions
+setup-custom-exports
+setup-custom-completions

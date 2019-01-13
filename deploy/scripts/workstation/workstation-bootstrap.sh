@@ -10,7 +10,7 @@ sudo systemctl start ssh
 sudo ./bootstrap-ubuntu.sh
 sudo groupadd docker
 sudo gpasswd -a $USER docker
-newgrp docker
+sudo newgrp docker
 
 echo "Installing zgen (zsh plugin manager)"
 git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
@@ -24,7 +24,7 @@ chsh -s /bin/zsh
 if [ ! -f ~/.zshrc ]
 then
     echo ".zshrc not found, creating..."
-    cp ../config/.z* ~
+    cp ./config/.z* ~
 fi
 
 echo "For updated shell to take effect you may need to logout first."
