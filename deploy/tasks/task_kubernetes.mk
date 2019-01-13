@@ -50,3 +50,12 @@ install-local-registry: ## Install docker-registry locally
 
 install-crictl: ## Install crictl k8s utility
 	go get github.com/kubernetes-incubator/cri-tools/cmd/crictl
+
+install-nfs-prov: ## Install k8s with local nfs storage provisioning
+	@echo "Configuring NFS in k8s"
+	kubectl apply -f "${SCRIPT_PATH}/nfs-rbac.yaml"
+	kubectl apply -f "${SCRIPT_PATH}/nfs-storageclass.yaml"
+	kubectl apply -f "${SCRIPT_PATH}/nfs-deployment.yaml"
+
+	@echo "Making nfs-storage the default storage class"
+	kubectl patch storageclass nfs-storage -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'

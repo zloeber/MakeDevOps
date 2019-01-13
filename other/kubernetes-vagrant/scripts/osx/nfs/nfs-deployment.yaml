@@ -1,0 +1,32 @@
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccount: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: jicki/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: fuseim.pri/ifs
+            - name: NFS_SERVER
+              value: "${NFS_SERVER}"
+            - name: NFS_PATH
+              value: "${NFS_PATH}"
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: "${NFS_SERVER}"
+            path: ":${SOURCE_DIR}"

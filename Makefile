@@ -1,6 +1,6 @@
 ## Makefile for bootstrap and deployment of this project
 SHELL=/bin/bash
-ENABLED_TASKS ?= deps devops direnv golang kubernetes kind istio draft jx
+ENABLED_TASKS ?= devops direnv golang kubernetes kind istio draft jx dockercompose docker
 ROOT_DIR := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 MAKEDEVOPS_PATH ?= $(ROOT_DIR)
 

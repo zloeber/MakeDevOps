@@ -1,0 +1,368 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Note: Running vagrant destruct will destroy the local NFS vdi persistent shared
+#       volume used in the deployment!
+
+# Required vagrant plugins
+# vagrant plugin install vagrant-reload
+
+### General
+$linked_clone = true                        # Save storage space
+$network = "192.168.34"                     # Only first three octets
+$vagrant_user = "vagrant"                   # The SSH user included in the vagrant box
+
+### NFS
+$nfs_gb = 10                               # The NFS disk for the master server is expressed in decimal gigabytes (Default: 10GB)
+$nfs_base_path = 'opt/nfsdata'
+
+### Master
+$master_cpu = 1
+$master_memory = 1024                       # 1GB minimum required (2GB recommended)    
+
+### Node
+$node_count = 2                             # Minimum one node
+$node_cpu = 1           
+$node_memory = 1024                         # 1GB minimum required (2GB recommended)
+
+## Docker & Kubernetes
+$docker_version = "17.03"                   # Find other versions on https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-docker
+$k8s_token = "b33f0a.59b1100c41aa5000"      # This is a static token to make possible the automation. You can replace it with your own token 
+$k8s_api_port = "6443"                      # This is the default Kubernetes API port when kubeadm is used
+
+## CNI plugin (I've had good luck with weave)
+$cni_plugin = 'weave'
+
+######### DO NOT MODIFY AFTER THIS LINE #########
+$box_image = "ubuntu/xenial64"
+
+## Scripts
+$build_prereq = <<-SCRIPT
+echo "Prerequisites - Kernel Modules"
+modprobe br_netfilter
+modprobe ip_vs
+modprobe ip_vs_rr
+modprobe ip_vs_wrr
+modprobe ip_vs_sh
+modprobe nf_conntrack_ipv4
+
+echo ip_vs >> /etc/modules
+echo ip_vs_rr >> /etc/modules
+echo ip_vs_wrr >> /etc/modules
+echo ip_vs_sh >> /etc/modules
+echo nf_conntrack_ipv4 >> /etc/modules
+echo br_netfilter >> /etc/modules
+
+sysctl net.bridge.bridge-nf-call-iptables=1
+
+echo "Prerequisites - Turning off swap"
+swapoff -a
+
+# keep swap off after reboot
+sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+echo "System updates and software"
+export DEBIAN_FRONTEND=noninteractive # Prevents stdout errors
+apt-get update && apt-get install -yq \
+    linux-image-extra-$(uname -r) \
+    linux-image-extra-virtual \
+    ca-certificates \
+    ebtables \
+    ethtool \
+    curl \
+    jq \
+    apt-transport-https \
+    nfs-common \
+    git \
+    python-pip \
+    bash-completion
+
+echo "Add kubernetes apt repository and gpg key"
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
+add-apt-repository \
+    "deb [arch=amd64] http://apt.kubernetes.io \
+    kubernetes-$(lsb_release -cs) \
+    main"
+
+echo "Add docker apt repository and gpg key"
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+
+add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) \
+    stable"
+
+apt-get update \
+    && apt-get install -y \
+    docker-ce=$(apt-cache madison docker-ce | grep #{$docker_version} | head -1 | awk '{print $3}')
+
+apt-mark hold docker-ce
+usermod -a -G docker #{$vagrant_user}
+
+apt-get update && apt-get install -y \
+    kubelet \
+    kubeadm \
+    kubectl
+SCRIPT
+
+$kubeadm_init = <<-SCRIPT
+echo "Initiating Kubernetes Cluster"
+kubeadm init \
+--apiserver-advertise-address=#{$network}.10 \
+--pod-network-cidr=10.244.0.0/16 \
+--token=#{$k8s_token} \
+--token-ttl=0
+SCRIPT
+
+$kubeadm_join = <<-SCRIPT
+echo "Joining Kubernetes Cluster"
+kubeadm join \
+--token #{$k8s_token} #{$network}.10:#{$k8s_api_port} \
+--discovery-token-unsafe-skip-ca-verification
+SCRIPT
+
+$kubectl_config = <<-SCRIPT
+echo "Install pip"
+curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
+
+echo "Configuring kubectl profile"
+# Set up admin creds for the host vagrant system
+rm -rf /vagrant/.kube
+echo "Copying credentials to /vagrant"
+mkdir -p /vagrant/.kube
+cp -i /etc/kubernetes/admin.conf /vagrant/.kube/config
+
+# Setup admin creds for #{$vagrant_user} user too
+rm -rf /home/#{$vagrant_user}/.kube
+echo Copying credentials to /home/#{$vagrant_user}
+sudo --user=#{$vagrant_user} mkdir -p /home/#{$vagrant_user}/.kube
+cp -i /etc/kubernetes/admin.conf /home/#{$vagrant_user}/.kube/config
+echo "source <(kubectl completion bash)" >> /home/#{$vagrant_user}/.bashrc
+
+echo "Copying network startup script for #{$cni_plugin}"
+cp /vagrant/scripts/cni-#{$cni_plugin}.sh /home/#{$vagrant_user}/start-network.sh
+
+echo "Copying over other scripts"
+cp /vagrant/scripts -r /home/#{$vagrant_user}
+
+chmod +x -R /home/#{$vagrant_user}/*.sh
+chmod +x -R /home/#{$vagrant_user}/scripts/*.sh
+chown -R $(id -u #{$vagrant_user}):$(id -g #{$vagrant_user}) /home/#{$vagrant_user}/
+
+echo "Setting up docker command-line completion"
+curl -s -S https://raw.githubusercontent.com/docker/docker-ce/master/components/cli/contrib/completion/bash/docker -o /etc/bash_completion.d/docker.sh
+
+SCRIPT
+
+$build_nfs = <<-SCRIPT
+echo "NFS Server Install"
+# Prevents stdout errors when automating apt
+export DEBIAN_FRONTEND=noninteractive
+parted -s -a optimal /dev/sdc mklabel GPT mkpart primary 0% 100% set 1 lvm on
+pvcreate /dev/sdc1
+vgcreate kubernetes /dev/sdc1
+lvcreate -l 100%FREE -n nfs kubernetes
+mkfs.ext4 /dev/mapper/kubernetes-nfs
+mkdir -p /#{$nfs_base_path}
+echo "/dev/mapper/kubernetes-nfs    /#{$nfs_base_path} ext4    defaults    0   2" >> /etc/fstab
+mount -a
+apt-get update \
+    && apt-get install -y \
+    nfs-kernel-server \
+    rpcbind
+chown nobody:nogroup /#{$nfs_base_path}
+echo "/#{$nfs_base_path}   #{$network}.0/24(rw,sync,no_root_squash)" >> /etc/exports
+systemctl enable rpcbind.service 
+systemctl enable nfs-server.service
+systemctl start rpcbind.service
+systemctl start nfs-server.service
+
+cat > /home/#{$vagrant_user}/nfs-deployment.yaml <<EOF
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccount: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: jicki/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: fuseim.pri/ifs
+            - name: NFS_SERVER
+              value: #{$network}.10
+            - name: NFS_PATH
+              value: /#{$nfs_base_path}
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: #{$network}.10
+            path: /#{$nfs_base_path}
+EOF
+
+cat > /home/#{$vagrant_user}/nfs-rbac.yaml <<EOF
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-client-provisioner
+  
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: nfs-client-provisioner-runner
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: run-nfs-client-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: nfs-client-provisioner
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: nfs-client-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
+cat > /home/#{$vagrant_user}/nfs-storageclass.yaml <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-storage
+provisioner: fuseim.pri/ifs
+EOF
+
+cat > /home/#{$vagrant_user}/setup-nfs.sh <<EOF
+#!/bin/bash
+echo "Configuring NFS"
+kubectl apply -f nfs-rbac.yaml
+kubectl apply -f nfs-deployment.yaml
+kubectl apply -f nfs-storageclass.yaml
+
+echo "Making nfs-storage the default storage class"
+kubectl patch storageclass nfs-storage -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+EOF
+
+chmod +x /home/#{$vagrant_user}/setup-nfs.sh
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  file_root = File.dirname(File.expand_path(__FILE__))
+
+  config.vm.define "master", primary: true do |master|
+      master.vm.box = $box_image
+      master.vm.hostname = "master"
+      master.vm.network :private_network, ip: "#{$network}.10"
+      master.vm.provider "virtualbox" do |vb|
+          vb.memory = $master_memory
+          vb.cpus = $master_cpu
+          vb.linked_clone = $linked_clone
+          vb.customize ["modifyvm", :id, "--macaddress1", "auto"]
+          vb.customize ["modifyvm", :id, "--vram", "7"]
+          vb.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
+          file_to_disk = File.join(file_root, "nfs.vdi")
+          unless File.exist?(file_to_disk)
+              vb.customize ['createhd', '--filename', file_to_disk, '--format', 'VDI', '--size', $nfs_gb * 1024]
+          end
+          vb.customize ['storageattach', :id,  '--storagectl', 'SCSI', '--port', 2, '--type', 'hdd', '--medium', file_to_disk]
+      end
+      # Network passthrough to host
+      master.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true
+      master.vm.network "forwarded_port", guest: 6443, host: 6443, auto_correct: true
+      master.vm.network "forwarded_port", guest: 8443, host: 8443, auto_correct: true
+      master.vm.network "forwarded_port", guest: 4443, host: 4443, auto_correct: true
+      
+      # Add a range of ports if you like
+      # for i in 4567..4583
+      #    master.vm.network :forwarded_port, guest: i, host: i, auto_correct: true
+      # end
+
+      # Setup the master hosts file
+      master.vm.provision "shell" do |s|
+          s.inline = "sed 's/127.0.1.1.*#{master.vm.hostname}*/#{$network}.10  #{master.vm.hostname}/' -i /etc/hosts"
+      end
+
+      # Add other node names to the host file
+      (1..$node_count).each do |i|
+          master.vm.provision "shell" do |s|
+              s.inline = "echo '#{$network}.#{i + 10}     node#{i}' >> /etc/hosts"
+          end 
+      end
+
+      # Provision the master node
+      master.vm.provision "shell", inline: <<-SHELL
+          #{$build_prereq}
+          #{$build_nfs}
+          #{$kubeadm_init}
+          #{$kubectl_config}
+      SHELL
+      master.vm.provision :reload
+  end
+
+  # Provision the worker nodes
+  (1..$node_count).each do |i|
+      config.vm.define "node#{i}" do |node|
+          node.vm.box = $box_image
+          node.vm.hostname = "node#{i}"
+          node.vm.network :private_network, ip: "#{$network}.#{i + 10}"
+          node.vm.provider "virtualbox" do |vb|
+              vb.memory = $node_memory
+              vb.cpus = $node_cpu
+              vb.linked_clone = $linked_clone
+              vb.customize ["modifyvm", :id, "--macaddress1", "auto"]
+              vb.customize ["modifyvm", :id, "--vram", "7"]
+          end
+
+          # Add master node to the hosts file and remove the default localhost
+          node.vm.provision "shell" do |s|
+              s.inline = "echo #{$network}.10    master >> /etc/hosts"
+              s.inline = "sed 's/127.0.1.1.*node#{i}*/#{$network}.#{i + 10} node#{i}/' -i /etc/hosts"
+          end
+
+          # Add other node names to the host file
+          (1..$node_count).each do |j|
+              node.vm.provision "shell" do |s|
+                  s.inline = "echo '#{$network}.#{j + 10}     node#{j}' >> /etc/hosts"
+              end 
+          end
+
+          node.vm.provision "shell", inline: <<-SHELL
+              #{$hosts_node_config}
+              #{$build_prereq}
+              #{$kubeadm_join}
+          SHELL
+          node.vm.provision :reload
+      end
+  end
+end

@@ -56,3 +56,5 @@ projects/**/
 .vscode
 public
 projects
+*.vdi
+*.ovf

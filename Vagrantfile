@@ -2,34 +2,57 @@
 # vi: set ft=ruby :
 
 # A Centos 7 instance that includes:
-# - Python 2.7
 # - Commands available w/autocomplete: docker, aws
 # - Dockerized platform host for container testing
 # - Extra bootstrap scripts (for starting portainer and other tasks)
 # - Docker (remote api published to localhost:2376)
-# - A large set of make tasks for various devops tasks
+# - A large set of make tasks for various devops exploration
 
-### NFS
+### Config
 $nfs_gb = 10
+$nfs_disk = "nfs.vdi"
+$box_image = "centos/7" #"ubuntu/xenial64"
+$ports = [111, 1313, 2049, 2376, 5432, 5555, 6379, 8080, 8001, 8088, 9000, 4443, 60010]
+$foldersync = {
+  'projects' => '/vagrant',
+  '.kube' => '/home/vagrant/.kube'
+}
+controller_name = 'SATA Controller'
+
+def sata_controller_exists?(controller_name="SATA Controller")
+  `vboxmanage showvminfo storage-host-vm-dev | grep " #{controller_name}" | wc -l`.to_i == 1
+end
+
+def port_in_use?(controller_name, port)
+  `vboxmanage showvminfo storage-host-vm-dev | grep "#{controller_name} (#{port}, " | wc -l`.to_i == 1
+end
+
+def attach_hdd(v, controller_name, port, hdd_path)
+  unless port_in_use?(controller_name, port)
+    v.customize ['storageattach', :id, '--storagectl', controller_name, '--port', port, '--device', 0, '--type', 'hdd', '--medium', hdd_path]
+  end
+end
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "centos/7"
-  # Use the following to sync another project folder into this box
-  # config.vm.synced_folder 'f:/Projects/Work/SomeProject/', '/home/vagrant/src'
-  
-  #config.vm.synced_folder '.', '/vagrant', disable: true
+  file_root = File.dirname(File.expand_path(__FILE__))
+  file_to_disk = File.join(file_root, $nfs_disk)
+  config.vm.box = $box_image
+
+  # Disable the default sync
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 8192
     v.cpus = 4
-    #v.customize ["modifyvm", :id, "--macaddress1", "auto"]
-    #v.customize ["modifyvm", :id, "--vram", "7"]
+    v.customize ["modifyvm", :id, "--macaddress1", "auto"]
+    v.customize ["modifyvm", :id, "--vram", "7"]
     v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
-    #file_to_disk = File.join(file_root, "nfs.vdi")
-    #unless File.exist?(file_to_disk)
-    #  v.customize ['createhd', '--filename', file_to_disk, '--format', 'VDI', '--size', $nfs_gb * 1024]
-    #end
-    #v.customize ['storageattach', :id,  '--storagectl', 'SCSI', '--port', 2, '--type', 'hdd', '--medium', file_to_disk]
+
+    v.customize ['storagectl', :id, '--name', controller_name, '--add', 'sata', '--portcount', 4] unless sata_controller_exists?(controller_name)
+
+    v.customize ['createhd', '--filename', file_to_disk, '--format', 'VDI', '--size', $nfs_gb * 1024] unless File.exist?(file_to_disk)
+
+    attach_hdd(v, controller_name, 0, file_to_disk)
   end
 
   #SSH
@@ -39,28 +62,10 @@ Vagrant.configure("2") do |config|
   # Useful in LSW sometimes
   #config.ssh.private_key_path = ["~/Vagrant/devops-vagrant-box/private_key"]
   config.vm.box_check_update = true
-  
-  # Network passthrough to host
-  config.vm.network "forwarded_port", guest: 1313, host: 1313, auto_correct: true
-  config.vm.network "forwarded_port", guest: 2376, host: 2376, auto_correct: true
-  config.vm.network "forwarded_port", guest: 5432, host: 5432, auto_correct: true
-  config.vm.network "forwarded_port", guest: 5555, host: 5555, auto_correct: true
-  config.vm.network "forwarded_port", guest: 6379, host: 6379, auto_correct: true
-  config.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true
-  config.vm.network "forwarded_port", guest: 8001, host: 8001, auto_correct: true
-  config.vm.network "forwarded_port", guest: 8088, host: 8088, auto_correct: true
-  config.vm.network "forwarded_port", guest: 9000, host: 9000, auto_correct: true
-  config.vm.network "forwarded_port", guest: 4443, host: 4443, auto_correct: true
-  config.vm.network "forwarded_port", guest: 60010, host: 60010, auto_correct: true
 
-  # Example port range
-  #for i in 4567..4583
-  #  config.vm.network :forwarded_port, guest: i, host: i, auto_correct: true
-  #end
-    
-  # Perform initial docker provision
-  # config.vm.provision :docker
-
+  for i in $ports
+    config.vm.network "forwarded_port", guest: i, host: i, auto_correct: true
+  end
   #Provision Once
   # - Run updates and some installs
   # - Provision docker then change it to always listen for remote API connections
@@ -69,7 +74,10 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     yum -y install epel-release
     yum -y update && yum -y upgrade
-    yum -y install curl git nano net-tools java-1.8.0-openjdk wget unzip jq kernel-headers kernel-devel lvm2 device-mapper device-mapper-persistent-data device-mapper-event device-mapper-libs device-mapper-event-libs bash-completion bash-completion-extras yum-utils tree ruby screen tmux byobu gcc openssl-devel bzip2-devel libffi-devel python-devel zlib-devel readline-devel sqlite-devel npm zsh stow socat maven nfs-utils parted
+    yum -y install curl git nano net-tools java-1.8.0-openjdk wget unzip jq kernel-headers kernel-devel lvm2 device-mapper device-mapper-persistent-data device-mapper-event device-mapper-libs device-mapper-event-libs bash-completion bash-completion-extras yum-utils tree ruby screen tmux byobu gcc openssl-devel bzip2-devel libffi-devel python-devel zlib-devel readline-devel sqlite-devel npm zsh stow socat maven nfs-utils e2fsprogs
+
+    sysctl net.bridge.bridge-nf-call-iptables=1
+    sysctl net.bridge.bridge-nf-call-ip6tables=1
 
     echo 'Installing most recent docker release...'
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -141,11 +149,11 @@ Vagrant.configure("2") do |config|
     echo ' '
     echo 'Run make for more devops bootstrap tasks. Update the Makefile to comment/uncomment more task libraries. Cheers!'
   SHELL
+
   # Use the following to ensure that rsync doesn't follow symlinks and error out
-  config.vm.synced_folder '.', '/home/vagrant', type: "rsync", rsync__exclude: [".git/", ".vagrant/", "projects/", ".kube"], rsync__args: ["--verbose", "--archive", "-z"]
+  config.vm.synced_folder '.', '/home/vagrant', type: "rsync", rsync__exclude: [".git/", ".vagrant/", "projects/", ".kube/", ".ssh/", ".config/"], rsync__args: ["--verbose", "--archive", "-z"]
 
-  config.vm.synced_folder 'projects', '/vagrant', create: true, type: "virtualbox", automount: true
-
-  config.vm.synced_folder '.kube', '/home/vagrant/.kube', create: true, type: "virtualbox", automount: true
+  $foldersync.each do |key, value|
+    config.vm.synced_folder "#{key}", "#{value}", create: true, type: "virtualbox", automount: true
+  end
 end
-

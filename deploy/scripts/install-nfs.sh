@@ -1,24 +1,28 @@
+#!/bin/bash
 echo "NFS Server Install"
 
-NFS_ROOT="${NFS_ROOT:-"/opt/nfsroot"}"
+NFS_ROOT="${NFS_ROOT:-"/var/nfsroot"}"
+DISK="${DISK:-"/dev/sdb"}"
+
+echo "NFS_ROOT: ${NFS_ROOT}"
+echo "DISK: ${DISK}"
 
 mkdir -p "${NFS_ROOT}"
 chmod -R 755 "${NFS_ROOT}"
-chown nfsnobody:nfsnobody "${NFS_ROOT}"
+chown -R nfsnobody:nfsnobody "${NFS_ROOT}"
 
 # Prevents stdout errors when automating apt
-yum -y install nfs-utils parted 
+parted -s -a optimal "${DISK}" mklabel GPT mkpart primary 0% 100% set 1 lvm on
+pvcreate "${DISK}1"
 
-parted -s -a optimal /dev/sdc mklabel GPT mkpart primary 0% 100% set 1 lvm on
-pvcreate /dev/sdc1
-vgcreate kubernetes /dev/sdc1
-lvcreate -l 100%FREE -n nfs kubernetes
-mkfs.ext4 /dev/mapper/kubernetes-nfs
-mkdir -p "${NFS_ROOT}"
-echo "/dev/mapper/kubernetes-nfs    ${NFS_ROOT} ext4    defaults    0   2" >> /etc/fstab
+vgcreate nfsroot "${DISK}1"
+lvcreate -l 100%FREE -n nfs nfsroot
+
+mkfs.ext4 /dev/mapper/nfsroot-nfs
+
+echo "/dev/mapper/nfsroot-nfs    ${NFS_ROOT} ext4    defaults    0   2" >> /etc/fstab
 mount -a
-chown nobody:nogroup "${NFS_ROOT}"
-echo "${NFS_ROOT}   0.0.0.0/0(rw,sync,no_root_squash)" >> /etc/exports
+echo "${NFS_ROOT} (rw,sync,no_root_squash)" > /etc/exports
 
 systemctl enable rpcbind
 systemctl enable nfs-server
