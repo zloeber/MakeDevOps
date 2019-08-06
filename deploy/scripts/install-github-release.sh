@@ -2,7 +2,8 @@
 # Scrape github releases for most recent download of a project file
 # Attempt to download and either extract/install or just install the
 # binary within. Good for self contained golang or other well thought
-# out utilities.
+# out utilities released to 'just work' but you may have to tweak things
+# for whatever releases you are targeting.
 #
 # Example
 #   install-github-release.sh jenkins-x/jx "${HOME}/.local/bin" jx
@@ -10,6 +11,8 @@
 #   install-github-release.sh jenkins-x/jx
 #
 # Author: Zachary Loeber
+
+PLATFORM?=linux_amd64
 
 # Quiet pushd/popd commands
 pushd () {
@@ -20,7 +23,11 @@ popd () {
 }
 
 function get_download_url {
-	wget -q -nv -O- https://api.github.com/repos/$1/releases/latest 2>/dev/null | jq -r '.assets[] | select(.browser_download_url | contains("inux-amd64")) | .browser_download_url'
+	wget -q -nv -O- https://api.github.com/repos/$1/releases/latest 2>/dev/null | jq -r --arg PLATFORM $2 '.assets[] | select(.browser_download_url | contains($PLATFORM)) | .browser_download_url'
+}
+
+function get_latest_version {
+    curl -s https://api.github.com/repos/$1/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")'
 }
 
 function install_binary {
@@ -82,27 +89,39 @@ function install_targz_folder {
 }
 
 function install_github_releases_app {
-	TARURL=`get_download_url $1 | grep tar | head -n 1`
-    URL=${TARURL:-`get_download_url $1 | head -n 1`}
-    FILE=$(basename $URL)
+    app=${1?"Usage: $0 author/app"}
+    dest=${2:-"${HOME}/.local/bin"}
+    appname=${3:-"${app##*/}"}
+    platform="${4:-linux_amd64}"
+
+    TARURL=`get_download_url $app $platform | grep gz | head -n 1`
+    URL="${TARURL:-`get_download_url $app $platform | head -n 1`}"
+    FILE=`basename $URL`
+
     echo "URL: ${URL}"
     echo "FILE: ${FILE}"
 
-    if [[ "$FILE" == *".tar.gz" ]]; then
-        echo "Source download is a tar.gz"
-        install_targz "${URL}" "${2}" "${3}"
+    if [[ "$FILE" == *"gz" ]]; then
+        echo "Source download is an archive (*.gz)"
+        install_targz "${URL}" $dest $appname
     else
         echo "Source download is a binary (we think)"
-        install_binary "${URL}" "${2}" "${3}"
+        install_binary "${URL}" $dest $appname
     fi
 }
 
 app=${1?"Usage: $0 author/app"}
 dest=${2:-"${HOME}/.local/bin"}
 appname=${3:-"${app##*/}"}
+appver=`get_latest_version "${app}"`
+appurl="https://api.github.com/repos/${app}/releases/latest"
+platform="${4:-linux_amd64}"
 
 echo "app=${app}"
 echo "dest=${dest}"
 echo "appname=${appname}"
+echo "appver: ${appver}"
+echo "appurl: ${appurl}"
+echo "platform: ${PLATFORM}"
 
-install_github_releases_app $app $dest $appname
+install_github_releases_app $app $dest $appname $platform

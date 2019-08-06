@@ -13,9 +13,10 @@ export GOPATH="${HOME}/go"
 
 # pyenv configs
 export PYENV_ROOT="${HOME}/.pyenv"
+export PYENV_BINPATH="${HOME}/.pyenv/bin"
 
 # Pulumi (if used)
 export PULUMI_ROOT=${HOME}/.pulumi/bin
 
 # Finally your path
-export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${BIN_PATH}:${PATH}"
+export PATH="${PYENV_BINPATH}:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${BIN_PATH}:${PATH}"

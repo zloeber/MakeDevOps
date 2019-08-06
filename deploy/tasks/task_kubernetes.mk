@@ -2,6 +2,8 @@ kubectl_BINPATH ?= ${HOME}/.local/bin
 
 INSTALL_KUBECTL_TASK := .show-platform-error
 
+DESIRED_VERSION ?= latest 
+
 ifeq ($(HOST_PLATFORM),Windows)
 	INSTALL_KUBECTL_TASK := .install-kubectl-windows
 endif
@@ -59,3 +61,9 @@ install-nfs-prov: ## Install k8s with local nfs storage provisioning
 
 	@echo "Making nfs-storage the default storage class"
 	kubectl patch storageclass nfs-storage -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+install-kubectx: ## Install kubectx utility
+	@mkdir -p "${BIN_PATH}"
+	@git clone https://github.com/ahmetb/kubectx ${HOME}/.local/kubectx
+	@ln -s ${HOME}/.local/kubectx/kubectx ${BIN_PATH}/kubectx
+	@ln -s ${HOME}/kubectx/kubens ${BIN_PATH}/kubens

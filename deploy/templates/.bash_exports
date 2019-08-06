@@ -1,11 +1,42 @@
+export BIN_PATH="${HOME}/.local/bin"
+
 # go
 export GOROOT="${HOME}/.go"
 export GOPATH="${HOME}/go"
 
-## pyenv configs
-export PYENV_ROOT="${HOME}/.pyenv"
-
-PULUMI_ROOT=${HOME}/.pulumi/bin
-
-export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${PATH}"
+## Apps
 export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
+export PYENV_ROOT="${HOME}/.pyenv"
+export PULUMI_ROOT=${HOME}/.pulumi/bin
+export KUBECTX_PATH="${HOME}/.kubectx"
+export MAKEDEVOPS_PATH="${HOME}"
+
+## Required for some tasks
+export LC_ALL=en_US.utf-8
+export LANG=en_US.utf-8
+
+## Backup
+export PATH_ORIG=${PATH}
+
+## PATH
+# Eliminate the weird Windows crap that breaks everything in WSL
+# PATH=$(echo "${PATH}" | sed -e 's/:\/mnt.*//g')
+binpaths=(
+    "${BIN_PATH}"
+    "${PYENV_ROOT}/bin"
+    "${GOROOT}/bin"
+    "${GOPATH}/bin"
+    "${PULUMI_ROOT}"
+    "${KUBECTX_PATH}"
+    "/usr/local/sbin"
+    "/usr/local/bin"
+    "/usr/sbin"
+    "/usr/bin"
+    "/sbin"
+    "/bin"
+    )
+
+export PATH=$(join-array ':' ${binpaths[*]})
+
+export LANG=en_US.utf-8
+export LC_ALL=en_US.utf-8

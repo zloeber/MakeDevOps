@@ -74,11 +74,11 @@ config: ## Enables tasks defined in ENABLED_TASKS
 	done
 
 .PHONY: enable-taskset
-enable-taskset: ## Enable taskset defined in TASKSET
+enable-taskset: ## Enable taskset defined in TS
 	eval $(CMD_ENABLE_TASKSET)
 
 .PHONY: disable-taskset
-disable-taskset: ## Enable taskset defined in TASKSET
+disable-taskset: ## Disable taskset defined in TS
 	eval $(CMD_DISABLE_TASKSET)
 
 .PHONY: export-envvars
@@ -91,49 +91,52 @@ export-envvars: ## Sources the deploy.env file into this session
 show-taskset: ## Shows all availble task sets
 	@echo 'All available or known task sets:'
 	@echo '---------------------------------'
-	ls -1 $(PROJECT_DIR)/deploy/tasks/task_*.mk
-	echo "${str#$prefix}"
+	@ls -1 $(PROJECT_DIR)/deploy/tasks/task_*.mk | cut -d'_' -f 2 | cut -d'.' -f 1
+
 	@echo ''
 	@echo 'To enable any of these:'
 	@echo '  ln -sf $(PROJECT_DIR)/deploy/tasks/task_<name>.mk $(PROJECT_DIR)/deploy/tasks/enabled/'
 	@echo 'Or:'
 	@echo '  make enable-taskset TS=<name>'
 
-PHONY: show-taskset-enabled
+.PHONY: show-taskset-enabled
 show-taskset-enabled: ## Shows enabled task sets
 	@ls -1 $(PROJECT_DIR)/deploy/tasks/enabled/*.mk
 	@echo ''
 	@echo 'To disable any of these (links):'
 	@echo '  make disable-taskset TS=<name>'
 
-PHONY: clear-taskset
+.PHONY: clear-taskset
 clear-taskset: ## Disables all enabled tasksets
 	@rm -f $(PROJECT_DIR)/deploy/tasks/enabled/task_*.mk
 	@echo 'Tasksets reset to default'
 
-PHONY: show-env
+.PHONY: show-env
 show-env: ## Environment and build information
 	@echo 'ROOT_DIR: $(ROOT_DIR)'
 	@echo 'PROJECT_DIR: $(PROJECT_DIR)'
 	@echo 'HOST_PLATFORM: $(HOST_PLATFORM)'
 	@cat $(dpl) | less
 
-PHONY: show-version
+.PHONY: show-version
 show-version: ## Output the current version
 	@echo "MakeDevOps - $(VERSION)"
 
-PHONY: reset-zsh
+.PHONY: reset-zsh
 reset-zsh: ## Reset zsh shell configuration (WARNING!)
+	@rm -rf "${HOME}/.zgen"
+	@git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
 	@cp -rf $(TEMPLATE_PATH)/.z* "${HOME}"
 	@cp -rf $(SCRIPT_PATH)/.z* "${HOME}"
+	@chmod g-w,o-w -R "${HOME}/.zgen"
 	@echo 'Restart zsh to reset shell'
 
-PHONY: reset-bash
+.PHONY: reset-bash
 reset-bash: ## Reset bash shell configuration (WARNING!)
 	@cp -rf $(TEMPLATE_PATH)/.b* "${HOME}"
 	@echo 'Restart bash process for reset shell'
 
-PHONY: config-bin-path
+.PHONY: config-bin-path .fix-profile-ssh-perms .show-platform-error
 add-bin-path: ## Adds .local/bin path to profile
 	@echo "Ensuring ${BINPATH} exists"
 	@mkdir -p "${BINPATH}"
@@ -141,5 +144,13 @@ add-bin-path: ## Adds .local/bin path to profile
 	@echo 'export PATH="${BINPATH}:${PATH}"' >> "${HOME}/.bashrc"
 
 ## Hidden tasks
+.fix-profile-ssh-perms:
+	chmod 700 ~/.ssh
+	chmod 644 ~/.ssh/authorized_keys
+	chmod 644 ~/.ssh/known_hosts
+	chmod 644 ~/.ssh/config
+	chmod 600 ~/.ssh/id_rsa
+	chmod 644 ~/.ssh/id_rsa.pub
+
 .show-platform-error: ## Shows that there is some issue with the platform for the chosen operation
 	@echo 'Platform is not supported for this operation: $(HOST_PLATFORM)'

@@ -5,18 +5,21 @@ if type ssh-agent &>/dev/null; then
 fi
 
 if type awless &>/dev/null; then
-  source <(awless completion "${shellenv}") && echo "awless: Autocomplete"
+  source <(awless completion zsh) && echo "awless: Autocomplete"
 fi
 if type kubectl &>/dev/null; then
-  source <(kubectl completion "${shellenv}") && echo "kubectl: Autocomplete Loaded"
+  source <(kubectl completion zsh) && echo "kubectl: Autocomplete Loaded"
 fi
 if type crictl &>/dev/null; then
-  source <(crictl completion "${shellenv}") && echo "crictl: Autocomplete"
+  source <(crictl completion zsh) && echo "crictl: Autocomplete"
 fi
 if type hugo &>/dev/null; then
   hugo gen autocomplete --completionfile /tmp/hugo-auto.sh > /dev/null
   source <(cat /tmp/hugo-auto.sh) && echo "hugo: Autocomplete Loaded"
   rm -rf /tmp/hugo-auto.sh
+fi
+if [ $commands[helm] ]; then
+  source <(helm completion zsh)
 fi
 
 if type pyenv &>/dev/null; then
@@ -25,5 +28,5 @@ if type pyenv &>/dev/null; then
 fi
 
 if type direnv &>/dev/null; then
-  source <(direnv hook "${shellenv}") && echo "direnv: Hook loaded"
+  source <(direnv hook zsh) && echo "direnv: Hook loaded"
 fi

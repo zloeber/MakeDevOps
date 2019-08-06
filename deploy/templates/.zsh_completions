@@ -1,8 +1,4 @@
-shellenv="${SHELL##*/}"
-
-if type ssh-agent &>/dev/null; then
-  eval "$(ssh-agent -s)" && echo "ssh-agent: started"
-fi
+shellenv="zsh"
 
 if type awless &>/dev/null; then
   source <(awless completion "${shellenv}") && echo "awless: Autocomplete"
@@ -19,11 +15,13 @@ if type hugo &>/dev/null; then
   rm -rf /tmp/hugo-auto.sh
 fi
 
-if type pyenv &>/dev/null; then
-  eval "$(pyenv init -)"
-  echo "pyenv: Initialized"
+if command -v pyenv 1>/dev/null 2>&1; then
+    eval "$(pyenv init -)"
+    echo "pyenv: Initialized"
 fi
 
 if type direnv &>/dev/null; then
-  source <(direnv hook "${shellenv}") && echo "direnv: Hook loaded"
+    source <(direnv hook zsh) && echo "direnv: Hook loaded"
 fi
+
+start_ssh_agent && echo "ssh-agent: Loaded"

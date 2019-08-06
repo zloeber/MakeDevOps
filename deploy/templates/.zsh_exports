@@ -1,21 +1,46 @@
-# Makedevops
-export MAKEDEVOPS_PATH=$HOME/.local/makedevops
-
-# Bin PATH
 export BIN_PATH="${HOME}/.local/bin"
-
-# WSL Vagrant path
-export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
 
 # go
 export GOROOT="${HOME}/.go"
 export GOPATH="${HOME}/go"
 
-# pyenv configs
+## Apps
+export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH="${HOME}"
 export PYENV_ROOT="${HOME}/.pyenv"
-
-# Pulumi (if used)
 export PULUMI_ROOT=${HOME}/.pulumi/bin
+export KUBECTX_PATH="${HOME}/.kubectx"
+export MAKEDEVOPS_PATH="${HOME}"
+export ZGEN_PATH="${HOME}/.zgen"
 
-# Finally your path
-export PATH="${PYENV_ROOT}/bin:${GOROOT}/bin:${GOPATH}:${PULUMI_ROOT}:${BIN_PATH}:${PATH}"
+## System
+export LC_ALL=en_US.utf-8
+export LANG=en_US.utf-8
+
+## Backup
+export PATH_ORIG=${PATH}
+
+## PATH
+# Eliminate the weird Windows crap that breaks everything in WSL
+# PATH=$(echo "${PATH}" | sed -e 's/:\/mnt.*//g')
+binpaths=(
+    "${BIN_PATH}"
+    "${PYENV_ROOT}/bin"
+    "${GOROOT}/bin"
+    "${GOPATH}/bin"
+    "${PULUMI_ROOT}"
+    "${KUBECTX_PATH}"
+    "${ZGEN_PATH}"
+    "/usr/local/sbin"
+    "/usr/local/bin"
+    "/usr/sbin"
+    "/usr/bin"
+    "/sbin"
+    "/bin"
+    )
+
+join-array () {local IFS="$1"; shift; echo "$*"}
+export PATH=$(join-array ':' ${binpaths[*]})
+
+## Ensure this is set for your locale!
+export LANG=en_US.utf-8
+export LC_ALL=en_US.utf-8

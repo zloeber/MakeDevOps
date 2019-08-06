@@ -1,4 +1,4 @@
-## Replace direnv with your tasks name and modify 
+## Direnv - Manage your local env vars with style
 direnv_BINPATH := ${HOME}/.local/bin
 INSTALL_direnv_TASK := .show-platform-error
 ifeq ($(HOST_PLATFORM),Darwin)  # Mac OS X
@@ -20,20 +20,18 @@ install-direnv: ## Downloads direnv binary for the local account
 	@echo 'Task = $(INSTALL_direnv_TASK)'
 	$(MAKE) -s -C . scrt=$(scrt) dpl=$(dpl) $(INSTALL_direnv_TASK)
 
+.install-direnv-linux: ## Downloads and installs direnv (Linux)
+	$(SCRIPT_PATH)/install-github-release.sh direnv/direnv ${direnv_BINPATH} direnv linux-amd64
+
+.install-direnv-osx: ## Downloads and installs direnv (osx)
+	$(SCRIPT_PATH)/install-github-release.sh direnv/direnv ${direnv_BINPATH} direnv darwin-amd64
+
+set-direnv-for-pyenv: ## Creates file needed to use pyenv with direnv
+	@echo "Adding to ${HOME}/.direnvrc"
+	@cat $(TEMPLATE_PATH)/direnv_pyenv.sh >> "${HOME}/.direnvrc"
+
 PYVER?=3.7.2
 DEST?="${PWD}"
 
 new-direnv-pyenv-envrc: ## Create a .envrc file for a pyenv managed Python project
 	@cp -f $(TEMPLATE_PATH)/envrc-python "${DEST}/.envrc"
-
-.install-direnv-linux: ## Downloads and installs direnv (Linux)
-	@echo Installing direnv binary
-	$(SCRIPT_PATH)/install-github-release.sh direnv/direnv
-
-.install-direnv-osx: ## Downloads and installs direnv (OSX)
-	@echo Installing direnv binary
-	$(SCRIPT_PATH)/install-local-bin.sh direnv $$(curl -s 'https://api.github.com/repos/direnv/direnv/releases/latest' | grep browser_download_url | grep darwin-amd64 | cut -d '"' -f 4)
-
-set-direnv-for-pyenv: ## Creates file needed to use pyenv with direnv
-	@echo "Adding to ${HOME}/.direnvrc"
-	@cat $(TEMPLATE_PATH)/direnv_pyenv.sh >> "${HOME}/.direnvrc"

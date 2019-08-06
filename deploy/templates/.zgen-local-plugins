@@ -73,15 +73,18 @@ zgen load StackExchange/blackbox
 # Load some oh-my-zsh plugins
 zgen oh-my-zsh plugins/pip
 zgen oh-my-zsh plugins/sudo
-zgen oh-my-zsh plugins/aws
+#zgen oh-my-zsh plugins/aws
 zgen oh-my-zsh plugins/chruby
 zgen oh-my-zsh plugins/colored-man-pages
 zgen oh-my-zsh plugins/git
 zgen oh-my-zsh plugins/github
-zgen oh-my-zsh plugins/python
+#zgen oh-my-zsh plugins/python
 zgen oh-my-zsh plugins/rsync
 zgen oh-my-zsh plugins/screen
 zgen oh-my-zsh plugins/vagrant
+zgen oh-my-zsh plugins/terraform
+zgen oh-my-zsh plugins/kube-ps1
+zgen oh-my-zsh plugins/azure
 
 if [ $(uname -a | grep -ci Darwin) = 1 ]; then
   # Load OSX-specific plugins

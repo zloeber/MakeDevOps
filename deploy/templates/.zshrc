@@ -26,6 +26,7 @@ load-starter-plugin-list() {
   ZGEN_COMPLETIONS=()
 
   zgen oh-my-zsh
+  chmod g-w,o-w -R "${HOME}/.zgen"
 
   # If you want to customize your plugin list, create a file named
   # .zgen-local-plugins in your home directory. That file will be sourced
@@ -83,13 +84,13 @@ load-starter-plugin-list() {
   # Load some oh-my-zsh plugins
   zgen oh-my-zsh plugins/pip
   zgen oh-my-zsh plugins/sudo
-  zgen oh-my-zsh plugins/aws
+  #zgen oh-my-zsh plugins/aws
   zgen oh-my-zsh plugins/chruby
   zgen oh-my-zsh plugins/colored-man-pages
   zgen oh-my-zsh plugins/git
-  zgen oh-my-zsh plugins/github
-  zgen oh-my-zsh plugins/python
-  zgen oh-my-zsh plugins/rsync
+  #zgen oh-my-zsh plugins/github
+  #zgen oh-my-zsh plugins/python
+  #zgen oh-my-zsh plugins/rsync
   zgen oh-my-zsh plugins/screen
   zgen oh-my-zsh plugins/vagrant
 
@@ -101,7 +102,7 @@ load-starter-plugin-list() {
 
   # A set of shell functions to make it easy to install small apps and
   # utilities distributed with pip.
-  zgen load sharat87/pip-app
+  #zgen load sharat87/pip-app
 
   zgen load chrissicool/zsh-256color
 
@@ -205,17 +206,22 @@ if [ $(get_file_modification_time ${REAL_ZGEN_SETUP}) -gt $(get_file_modificatio
 fi
 unset REAL_ZGEN_SETUP
 
-if [[ -f ~/.zsh_exports ]]; then
+if [ -f ~/.zsh_exports ]; then
   echo "Custom exports.."
   source ~/.zsh_exports
 fi
 
-if [[ -f ~/.zsh_functions ]]; then
+if [ -f ~/.zsh_functions ]; then
   echo "Custom functions.."
   source ~/.zsh_functions
 fi
 
-if [[ -f ~/.zsh_completions ]]; then
+if [ -f ~/.zsh_completions ]; then
   echo "Custom completions.."
   source ~/.zsh_completions
+fi
+
+if [ -f ~/.zsh_prompt ]; then
+  echo "Custom prompt.."
+  source ~/.zsh_prompt
 fi

@@ -1,0 +1,1 @@
+#export PS1="$(prompt_senpai_time)%F{166}%n%f in %F{33}%~%f$(terraform_prompt_info)$(prompt_senpai_git)$(k8s_info)%(?.%F{15}.%F{160})❯%f"

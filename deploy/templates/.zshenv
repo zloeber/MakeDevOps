@@ -1,4 +1,3 @@
-#!/bin/bash
 add-to-path() {
     newelement=${1%/}
     if [ -d "$1" ] && ! echo $PATH | grep -E -q "(^|:)$newelement($|:)" ; then
@@ -12,6 +11,21 @@ add-to-path() {
 
 rm-from-path() {
     PATH="$(echo $PATH | sed -e "s;\(^\|:\)${1%/}\(:\|\$\);\1\2;g" -e 's;^:\|:$;;g' -e 's;::;:;g')"
+}
+
+terraform_prompt_info() {
+    # check if in terraform dir
+    if [ -d .terraform ]; then
+        workspace=$(terraform workspace show 2> /dev/null) || return
+        echo "[${workspace}]"
+    fi
+}
+
+function_exists() {
+    FUNCTION_NAME=$1
+    [ -z "$FUNCTION_NAME" ] && return 1
+    declare -F "$FUNCTION_NAME" > /dev/null 2>&1
+    return $?
 }
 
 # Functions to help us manage paths.
@@ -44,7 +58,7 @@ append-to-path () {
 
 remove-dups-from-path () {
     local PATHVARIABLE=${2:-PATH}
-    pathlist=`echo "${PATH}"" | sed 's/:/\n/g' | uniq`
+    pathlist=`echo "${PATH}" | sed 's/:/\n/g' | uniq`
     echo "PATH (Original): $PATH"
     unset PATH
     # echo "After unset, PATH: $PATH"
@@ -63,14 +77,10 @@ remove-dups-from-path () {
     export PATH
 }
 
-join-array () {
-    IFS="$1"
-    shift
-    echo "$*"
-}
+join () {local IFS="$1"; shift; echo "$*"}
 
-load-ssh-agent () {
-    SSH_ENV=${1:-"${HOME}/.ssh/environment"}
+load_ssh_agent () {
+    local SSH_ENV=${1:-"${HOME}/.ssh/environment"}
     if type ssh-agent &>/dev/null; then
         echo "Initializing new SSH agent..."
         touch "${SSH_ENV}"
@@ -81,34 +91,14 @@ load-ssh-agent () {
     fi
 }
 
-start-ssh-agent () {
-    SSH_ENV=${1:-"${HOME}/.ssh/environment"}
+start_ssh_agent () {
+    local SSH_ENV=${1:-"${HOME}/.ssh/environment"}
     if [ -f "${SSH_ENV}" ]; then
         . "${SSH_ENV}" > /dev/null
         kill -0 $SSH_AGENT_PID 2>/dev/null || {
-            load-ssh-agent
+            load_ssh_agent
         }
     else
-        load-ssh-agent
+        load_ssh_agent
     fi
 }
-
-#init-kubeconfig () {
-#    if [[ `ls ~/.kube/config | grep kubeconfig | wc -l` != 0 ]]; then
-#        for f in `ls ~/.kube/config/ | grep kubeconfig`; do
-#            export KUBECONFIG="$HOME/.kube/config/$f:$KUBECONFIG"; done && \
-#            export KUBECONFIG=$(echo $KUBECONFIG | sed 's/:$//') && \
-#    fi
-#    kubectl config get-contexts
-#}
-#export -f init-kubeconfig
-
-export -f add-to-path
-export -f rm-from-path
-export -f remove-from-path
-export -f prepend-to-path
-export -f append-to-path
-export -f remove-dups-from-path
-export -f join-array
-export -f start-ssh-agent
-export -f load-ssh-agent
